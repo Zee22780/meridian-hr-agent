@@ -14,6 +14,9 @@ supabase>=2.7.0
 # Anthropic SDK
 anthropic>=0.34.0
 
+# OpenAI (embeddings)
+openai>=1.0.0
+
 # Validation & config
 pydantic>=2.8.0
 pydantic-settings>=2.4.0

@@ -1,0 +1,86 @@
+{
+  "_note": "New hires are always available — no entry needed. All slots are relative to the new hire's start_date via day_offset (0 = first day). Intentional slot overlaps are included to exercise conflict resolution in schedule_meeting.",
+  "EMP005": {
+    "name": "Priya Nair",
+    "title": "Engineering Manager",
+    "email": "priya.nair@meridian.com",
+    "meeting_role": "manager",
+    "available_slots": [
+      { "day_offset": 0, "time": "09:00", "duration_minutes": 60 },
+      { "day_offset": 1, "time": "10:00", "duration_minutes": 30 },
+      { "day_offset": 3, "time": "14:00", "duration_minutes": 60 },
+      { "day_offset": 7, "time": "09:00", "duration_minutes": 30 }
+    ]
+  },
+  "EMP006": {
+    "name": "Diana Walsh",
+    "title": "VP of Marketing",
+    "email": "diana.walsh@meridian.com",
+    "meeting_role": "marketing",
+    "available_slots": [
+      { "day_offset": 2, "time": "10:00", "duration_minutes": 45 },
+      { "day_offset": 4, "time": "14:00", "duration_minutes": 45 },
+      { "day_offset": 6, "time": "11:00", "duration_minutes": 30 },
+      { "day_offset": 9, "time": "10:00", "duration_minutes": 45 }
+    ]
+  },
+  "EMP007": {
+    "name": "Robert Kim",
+    "title": "Director of Finance",
+    "email": "robert.kim@meridian.com",
+    "meeting_role": "department_head",
+    "available_slots": [
+      { "day_offset": 2, "time": "10:00", "duration_minutes": 60 },
+      { "day_offset": 5, "time": "09:00", "duration_minutes": 60 },
+      { "day_offset": 8, "time": "14:00", "duration_minutes": 45 }
+    ]
+  },
+  "EMP008": {
+    "name": "Sofia Nguyen",
+    "title": "Head of Design",
+    "email": "sofia.nguyen@meridian.com",
+    "meeting_role": "department_head",
+    "available_slots": [
+      { "day_offset": 1, "time": "10:00", "duration_minutes": 45 },
+      { "day_offset": 3, "time": "11:00", "duration_minutes": 30 },
+      { "day_offset": 6, "time": "14:00", "duration_minutes": 60 },
+      { "day_offset": 9, "time": "09:00", "duration_minutes": 45 }
+    ]
+  },
+  "EMP009": {
+    "name": "Tom Adler",
+    "title": "CEO",
+    "email": "tom.adler@meridian.com",
+    "meeting_role": "og_employee",
+    "available_slots": [
+      { "day_offset": 2, "time": "10:00", "duration_minutes": 30 },
+      { "day_offset": 5, "time": "15:00", "duration_minutes": 30 },
+      { "day_offset": 8, "time": "10:00", "duration_minutes": 30 },
+      { "day_offset": 10, "time": "09:00", "duration_minutes": 60 }
+    ]
+  },
+  "EMP010": {
+    "name": "Nadia Osei",
+    "title": "HR Generalist",
+    "email": "nadia.osei@meridian.com",
+    "meeting_role": "hr_rep",
+    "available_slots": [
+      { "day_offset": 0, "time": "14:00", "duration_minutes": 60 },
+      { "day_offset": 1, "time": "09:00", "duration_minutes": 60 },
+      { "day_offset": 3, "time": "10:00", "duration_minutes": 45 },
+      { "day_offset": 7, "time": "14:00", "duration_minutes": 30 }
+    ]
+  },
+  "EMP011": {
+    "name": "Alex Park",
+    "title": "IT Support Specialist",
+    "email": "alex.park@meridian.com",
+    "meeting_role": "it_onboarding",
+    "available_slots": [
+      { "day_offset": 0, "time": "10:00", "duration_minutes": 90 },
+      { "day_offset": 0, "time": "13:00", "duration_minutes": 60 },
+      { "day_offset": 1, "time": "14:00", "duration_minutes": 60 },
+      { "day_offset": 4, "time": "10:00", "duration_minutes": 30 }
+    ]
+  }
+}
