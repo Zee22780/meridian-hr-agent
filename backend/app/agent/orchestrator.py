@@ -4,6 +4,7 @@ from datetime import datetime
 import anthropic
 from sqlalchemy import select
 
+from app.data.service import DataService
 from app.db.supabase import async_session
 from app.db.tables import Employee
 from app.skills.registry import build_registry, get_tool_schemas
@@ -198,13 +199,52 @@ After all steps are complete, write a brief summary of what was accomplished."""
         """
         Answer a policy question from a new hire.
 
-        Returns either a sourced answer or an escalation record if confidence
-        is below threshold or the question cannot be answered from policy docs.
-        System prompt will be expanded in task 4.
+        Returns either a sourced answer (high confidence) or an escalation record
+        routed to HR (confidence_score < 0.7 / should_escalate: true).
         """
-        system = (
-            "You are an HR policy assistant. "
-            "Answer the employee's question using the retrieve_policy tool."
-        )
-        messages = [{"role": "user", "content": f"Employee {employee_id} asks: {question}"}]
+        hris_data = DataService().get_employee(employee_id)
+        if hris_data is None:
+            raise ValueError(f"Employee {employee_id} not found in HRIS")
+        employee_db_id = await self._upsert_employee(hris_data)
+
+        first_name = hris_data.get("first_name", "the employee")
+        department = hris_data.get("department", "")
+
+        system = f"""You are an HR policy assistant for Meridian. When an employee asks a \
+policy question, follow these steps in order:
+
+STEP 1 — RETRIEVE POLICY
+Call retrieve_policy with the employee's question as `query`.
+
+STEP 2 — EVALUATE CONFIDENCE
+Check the `should_escalate` field in the result:
+
+  If should_escalate is TRUE (confidence below threshold):
+    - Call flag_for_human_review:
+        employee_db_id: {employee_db_id}
+        type: "policy_unclear"
+        reason: "Policy question could not be answered with sufficient confidence. \
+Question: <restate the question>. Confidence score: <score from retrieve_policy result>."
+        priority: "medium"
+        context: {{"question": "<question>", "confidence_score": <score>}}
+    - Then respond to the employee: tell them their question has been routed to HR \
+and they will receive a response within 1 business day. Be warm and reassuring.
+
+  If should_escalate is FALSE (confidence at or above threshold):
+    - Answer the employee's question directly, using ONLY information from the \
+retrieved documents.
+    - Reference the relevant policy document by name (e.g. "According to the PTO policy…").
+    - Do not invent or infer information not explicitly stated in the documents.
+
+EMPLOYEE CONTEXT:
+- Name: {first_name}
+- Department: {department}
+- employee_db_id: {employee_db_id}
+
+RULES:
+- Always call retrieve_policy before answering or escalating.
+- If should_escalate is true, always escalate. Do not attempt to answer instead.
+- Never guess at policy details not present in the retrieved documents."""
+
+        messages = [{"role": "user", "content": question}]
         return await self._run_loop(messages, system)

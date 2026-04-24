@@ -18,8 +18,8 @@ sys.path.insert(0, str(Path(__file__).parent.parent / "backend"))
 from app.agent.orchestrator import OnboardingAgent
 
 
-async def test_policy_qa():
-    print("\n=== Test: Policy Q&A ===")
+async def test_policy_qa_high_confidence():
+    print("\n=== Test: Policy Q&A — high confidence ===")
     agent = OnboardingAgent()
     result = await agent.run_policy_qa(
         question="What is the PTO policy?",
@@ -36,6 +36,32 @@ async def test_policy_qa():
     assert result["stop_reason"] == "end_turn", f"Expected end_turn, got {result['stop_reason']}"
     assert any(tc["tool_name"] == "retrieve_policy" for tc in result["tool_calls"]), \
         "Expected retrieve_policy to be called"
+    assert not any(tc["tool_name"] == "flag_for_human_review" for tc in result["tool_calls"]), \
+        "High-confidence question should not escalate"
+    assert result["response"], "Expected non-empty response"
+    print("PASSED")
+
+
+async def test_policy_qa_low_confidence():
+    print("\n=== Test: Policy Q&A — low confidence / escalation ===")
+    agent = OnboardingAgent()
+    result = await agent.run_policy_qa(
+        question="What is the company policy on employee stock option vesting schedules?",
+        employee_id="EMP001",
+    )
+
+    print(f"stop_reason : {result['stop_reason']}")
+    print(f"tool_calls  : {len(result['tool_calls'])}")
+    for tc in result["tool_calls"]:
+        status = "ERROR" if tc["is_error"] else "ok"
+        print(f"  [{status}] {tc['tool_name']} → {list(tc['output'].keys())}")
+    print(f"response    : {result['response'][:300]}{'...' if len(result['response']) > 300 else ''}")
+
+    assert result["stop_reason"] == "end_turn", f"Expected end_turn, got {result['stop_reason']}"
+    assert any(tc["tool_name"] == "retrieve_policy" for tc in result["tool_calls"]), \
+        "Expected retrieve_policy to be called"
+    assert any(tc["tool_name"] == "flag_for_human_review" for tc in result["tool_calls"]), \
+        "Low-confidence question should escalate via flag_for_human_review"
     assert result["response"], "Expected non-empty response"
     print("PASSED")
 
@@ -69,7 +95,8 @@ async def test_onboarding_stub():
 
 
 async def main():
-    await test_policy_qa()
+    await test_policy_qa_high_confidence()
+    await test_policy_qa_low_confidence()
     await test_onboarding_stub()
     print("\nAll tests passed.")
 

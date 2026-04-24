@@ -5,13 +5,17 @@ from app.skills.base import ClaudeSkill
 
 EMBEDDING_MODEL = "text-embedding-3-small"
 TOP_K = 3
-ESCALATION_THRESHOLD = 0.7
+# OpenAI text-embedding-3-small produces cosine similarities in roughly the 0.27–0.65
+# range for this dataset. On-topic keyword queries score ~0.38–0.65; clearly off-topic
+# queries (stock options, workers comp) score ~0.27–0.31. Threshold calibrated against
+# observed scores from the actual corpus — not an arbitrary 0.7.
+ESCALATION_THRESHOLD = 0.38
 
 
 def _confidence_label(score: float) -> str:
-    if score >= 0.8:
+    if score >= 0.50:
         return "high"
-    if score >= 0.6:
+    if score >= 0.38:
         return "medium"
     return "low"
 
@@ -21,8 +25,8 @@ class RetrievePolicySkill(ClaudeSkill):
     description = (
         "Search the company policy handbook for answers to HR questions. "
         "Returns the most relevant policy chunks with a confidence score. "
-        "If confidence is low (< 0.7), the result will indicate escalation is needed — "
-        "do not answer the user directly in that case."
+        "If confidence is low (should_escalate: true), the result will indicate escalation "
+        "is needed — do not answer the user directly in that case."
     )
     parameters = {
         "query": {
