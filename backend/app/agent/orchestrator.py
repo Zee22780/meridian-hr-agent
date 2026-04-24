@@ -193,7 +193,56 @@ Then call update_onboarding_progress: step="i9_escalated", status="escalated"
 After all steps are complete, write a brief summary of what was accomplished."""
 
         messages = [{"role": "user", "content": json.dumps(employee_data)}]
-        return await self._run_loop(messages, system, max_turns=20)
+        result = await self._run_loop(messages, system, max_turns=20)
+
+        enforced = await self._ensure_i9_escalated(employee_db_id, result["tool_calls"])
+        if enforced is not None:
+            result["tool_calls"].append({
+                "tool_name": "flag_for_human_review",
+                "input": {"type": "i9_verification", "priority": "urgent"},
+                "output": enforced,
+                "is_error": False,
+            })
+
+        return result
+
+    @staticmethod
+    def _is_i9_related(question: str) -> bool:
+        q = question.lower()
+        return any(kw in q for kw in (
+            "i-9", "i9", "i 9", "form i-9",
+            "employment eligibility", "work authorization",
+            "everify", "e-verify", "uscis",
+        ))
+
+    async def _ensure_i9_escalated(
+        self, employee_db_id: str, tool_calls: list[dict]
+    ) -> dict | None:
+        """
+        Hard-rule enforcement: if no successful i9_verification escalation exists
+        in tool_calls, fire the skill directly and return the result.
+        """
+        already_escalated = any(
+            not tc["is_error"]
+            and tc["tool_name"] == "flag_for_human_review"
+            and tc["output"].get("type") == "i9_verification"
+            for tc in tool_calls
+        )
+        if already_escalated:
+            return None
+
+        skill = self.registry["flag_for_human_review"]
+        result = await skill.execute(
+            employee_db_id=employee_db_id,
+            type="i9_verification",
+            reason=(
+                "Federal I-9 employment eligibility verification requires HR review. "
+                "Must be completed within 3 business days of start date. "
+                "[Hard rule enforcement — fired programmatically.]"
+            ),
+            priority="urgent",
+        )
+        return result
 
     async def run_policy_qa(self, question: str, employee_id: str) -> dict:
         """
@@ -244,7 +293,22 @@ EMPLOYEE CONTEXT:
 RULES:
 - Always call retrieve_policy before answering or escalating.
 - If should_escalate is true, always escalate. Do not attempt to answer instead.
-- Never guess at policy details not present in the retrieved documents."""
+- Never guess at policy details not present in the retrieved documents.
+- I9 HARD RULE: If the question involves I9 verification, employment eligibility, or \
+work authorization, ALWAYS call flag_for_human_review with type="i9_verification" and \
+priority="urgent", regardless of the confidence score. Never answer I9 questions directly."""
 
         messages = [{"role": "user", "content": question}]
-        return await self._run_loop(messages, system)
+        result = await self._run_loop(messages, system)
+
+        if self._is_i9_related(question):
+            enforced = await self._ensure_i9_escalated(employee_db_id, result["tool_calls"])
+            if enforced is not None:
+                result["tool_calls"].append({
+                    "tool_name": "flag_for_human_review",
+                    "input": {"type": "i9_verification", "priority": "urgent"},
+                    "output": enforced,
+                    "is_error": False,
+                })
+
+        return result
