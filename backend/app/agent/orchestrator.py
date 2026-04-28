@@ -283,12 +283,54 @@ After all steps are complete, write a brief summary of what was accomplished."""
         )
         return result
 
+    async def _ensure_low_confidence_escalated(
+        self, question: str, employee_db_id: str, tool_calls: list[dict]
+    ) -> dict | None:
+        """
+        Hard-rule enforcement: if retrieve_policy returned should_escalate=True but
+        no successful policy_unclear escalation exists in tool_calls, fire the skill
+        directly and return the result.
+        """
+        retrieve_calls = [
+            tc for tc in tool_calls
+            if tc["tool_name"] == "retrieve_policy" and not tc["is_error"]
+        ]
+        if not retrieve_calls:
+            return None
+
+        should_escalate = retrieve_calls[-1]["output"].get("should_escalate", False)
+        if not should_escalate:
+            return None
+
+        already_escalated = any(
+            not tc["is_error"]
+            and tc["tool_name"] == "flag_for_human_review"
+            and tc["output"].get("type") == "policy_unclear"
+            for tc in tool_calls
+        )
+        if already_escalated:
+            return None
+
+        confidence_score = retrieve_calls[-1]["output"].get("confidence_score", 0.0)
+        skill = self.registry["flag_for_human_review"]
+        result = await skill.execute(
+            employee_db_id=employee_db_id,
+            type="policy_unclear",
+            reason=(
+                f"Policy question could not be answered with sufficient confidence. "
+                f"Question: {question!r}. Confidence score: {confidence_score}. "
+                "[Hard rule enforcement — fired programmatically.]"
+            ),
+            priority="medium",
+        )
+        return result
+
     async def run_policy_qa(self, question: str, employee_id: str) -> dict:
         """
         Answer a policy question from a new hire.
 
         Returns either a sourced answer (high confidence) or an escalation record
-        routed to HR (confidence_score < 0.7 / should_escalate: true).
+        routed to HR (confidence_score < ESCALATION_THRESHOLD / should_escalate: true).
         """
         hris_data = DataService().get_employee(employee_id)
         if hris_data is None:
@@ -340,21 +382,55 @@ priority="urgent", regardless of the confidence score. Never answer I9 questions
         messages = [{"role": "user", "content": question}]
         result = await self._run_loop(messages, system, employee_db_id=employee_db_id)
 
+        # Hard enforcement: confidence threshold escalation (skip if I9 — that rule fires next)
+        low_conf_enforced = None if self._is_i9_related(question) else \
+            await self._ensure_low_confidence_escalated(
+                question, employee_db_id, result["tool_calls"]
+            )
+        if low_conf_enforced is not None:
+            await self._log_action(
+                action_type="flag_for_human_review",
+                input={"type": "policy_unclear", "priority": "medium"},
+                output=low_conf_enforced,
+                is_error=False,
+                employee_db_id=employee_db_id,
+            )
+            result["tool_calls"].append({
+                "tool_name": "flag_for_human_review",
+                "input": {"type": "policy_unclear", "priority": "medium"},
+                "output": low_conf_enforced,
+                "is_error": False,
+            })
+
+        # Hard enforcement: I9 rule
         if self._is_i9_related(question):
-            enforced = await self._ensure_i9_escalated(employee_db_id, result["tool_calls"])
-            if enforced is not None:
+            i9_enforced = await self._ensure_i9_escalated(employee_db_id, result["tool_calls"])
+            if i9_enforced is not None:
                 await self._log_action(
                     action_type="flag_for_human_review",
                     input={"type": "i9_verification", "priority": "urgent"},
-                    output=enforced,
+                    output=i9_enforced,
                     is_error=False,
                     employee_db_id=employee_db_id,
                 )
                 result["tool_calls"].append({
                     "tool_name": "flag_for_human_review",
                     "input": {"type": "i9_verification", "priority": "urgent"},
-                    "output": enforced,
+                    "output": i9_enforced,
                     "is_error": False,
                 })
+
+        # Enrich return dict with confidence and escalation metadata
+        retrieve_calls = [
+            tc for tc in result["tool_calls"]
+            if tc["tool_name"] == "retrieve_policy" and not tc["is_error"]
+        ]
+        confidence_score = retrieve_calls[-1]["output"].get("confidence_score") if retrieve_calls else None
+        escalated = any(
+            not tc["is_error"] and tc["tool_name"] == "flag_for_human_review"
+            for tc in result["tool_calls"]
+        )
+        result["confidence_score"] = confidence_score
+        result["escalated"] = escalated
 
         return result
