@@ -1,4 +1,5 @@
 import json
+import uuid
 from datetime import datetime
 
 import anthropic
@@ -6,7 +7,7 @@ from sqlalchemy import select
 
 from app.data.service import DataService
 from app.db.supabase import async_session
-from app.db.tables import Employee
+from app.db.tables import AgentAction, Employee
 from app.skills.registry import build_registry, get_tool_schemas
 
 _DEPT_HEAD_CONTACTS = {
@@ -30,11 +31,35 @@ class OnboardingAgent:
         self.tools = get_tool_schemas(self.registry)
         self.client = anthropic.AsyncAnthropic()
 
+    async def _log_action(
+        self,
+        action_type: str,
+        input: dict,
+        output: dict,
+        is_error: bool,
+        employee_db_id: str | None = None,
+    ) -> None:
+        try:
+            async with async_session() as session:
+                async with session.begin():
+                    session.add(AgentAction(
+                        agent_name="OnboardingAgent",
+                        action_type=action_type,
+                        employee_id=uuid.UUID(employee_db_id) if employee_db_id else None,
+                        input=input,
+                        output=output,
+                        status="error" if is_error else "success",
+                        error=output.get("error") if is_error else None,
+                    ))
+        except Exception as e:
+            print(f"[audit] WARNING: failed to log action {action_type}: {e}")
+
     async def _run_loop(
         self,
         messages: list[dict],
         system_prompt: str,
         max_turns: int = 10,
+        employee_db_id: str | None = None,
     ) -> dict:
         """
         Core agentic loop shared by both workflows.
@@ -89,6 +114,13 @@ class OnboardingAgent:
                         "output": result,
                         "is_error": is_error,
                     })
+                    await self._log_action(
+                        action_type=block.name,
+                        input=block.input,
+                        output=result,
+                        is_error=is_error,
+                        employee_db_id=employee_db_id,
+                    )
                     tool_results.append({
                         "type": "tool_result",
                         "tool_use_id": block.id,
@@ -193,10 +225,17 @@ Then call update_onboarding_progress: step="i9_escalated", status="escalated"
 After all steps are complete, write a brief summary of what was accomplished."""
 
         messages = [{"role": "user", "content": json.dumps(employee_data)}]
-        result = await self._run_loop(messages, system, max_turns=20)
+        result = await self._run_loop(messages, system, max_turns=20, employee_db_id=employee_db_id)
 
         enforced = await self._ensure_i9_escalated(employee_db_id, result["tool_calls"])
         if enforced is not None:
+            await self._log_action(
+                action_type="flag_for_human_review",
+                input={"type": "i9_verification", "priority": "urgent"},
+                output=enforced,
+                is_error=False,
+                employee_db_id=employee_db_id,
+            )
             result["tool_calls"].append({
                 "tool_name": "flag_for_human_review",
                 "input": {"type": "i9_verification", "priority": "urgent"},
@@ -299,11 +338,18 @@ work authorization, ALWAYS call flag_for_human_review with type="i9_verification
 priority="urgent", regardless of the confidence score. Never answer I9 questions directly."""
 
         messages = [{"role": "user", "content": question}]
-        result = await self._run_loop(messages, system)
+        result = await self._run_loop(messages, system, employee_db_id=employee_db_id)
 
         if self._is_i9_related(question):
             enforced = await self._ensure_i9_escalated(employee_db_id, result["tool_calls"])
             if enforced is not None:
+                await self._log_action(
+                    action_type="flag_for_human_review",
+                    input={"type": "i9_verification", "priority": "urgent"},
+                    output=enforced,
+                    is_error=False,
+                    employee_db_id=employee_db_id,
+                )
                 result["tool_calls"].append({
                     "tool_name": "flag_for_human_review",
                     "input": {"type": "i9_verification", "priority": "urgent"},
