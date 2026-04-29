@@ -1,0 +1,48 @@
+- generic [ref=e3]:
+  - complementary [ref=e4]:
+    - generic [ref=e7]: Meridian
+    - navigation [ref=e8]:
+      - paragraph [ref=e9]: Main
+      - link "Dashboard" [ref=e10] [cursor=pointer]:
+        - /url: /dashboard
+        - img [ref=e11]
+        - text: Dashboard
+      - link "Escalations" [ref=e16] [cursor=pointer]:
+        - /url: /escalations
+        - img [ref=e17]
+        - text: Escalations
+      - link "Audit Log" [ref=e19] [cursor=pointer]:
+        - /url: /audit
+        - img [ref=e20]
+        - text: Audit Log
+      - link "New Hire Chat" [ref=e23] [cursor=pointer]:
+        - /url: /chat
+        - img [ref=e24]
+        - text: New Hire Chat
+    - generic [ref=e26]:
+      - paragraph [ref=e27]: Meridian HR Agent
+      - paragraph [ref=e28]: Phase 6 · MVP
+  - generic [ref=e29]:
+    - banner [ref=e30]:
+      - heading "New Hire Chat" [level=1] [ref=e31]
+    - main [ref=e32]:
+      - generic [ref=e34]:
+        - generic [ref=e36]: 👋
+        - heading "Welcome to Meridian" [level=2] [ref=e37]
+        - paragraph [ref=e38]: Ask me anything about your onboarding, benefits, policies, and more.
+        - generic [ref=e39]:
+          - generic [ref=e40]: Who are you?
+          - combobox [ref=e41]:
+            - option "Select your name..." [selected]
+            - option "Jordan Rivera"
+            - option "Marcus Chen"
+            - option "Aisha Thompson"
+            - option "Luca Moretti"
+            - option "Priya Nair"
+            - option "Diana Walsh"
+            - option "Robert Kim"
+            - option "Sofia Nguyen"
+            - option "Tom Adler"
+            - option "Nadia Osei"
+            - option "Alex Park"
+        - button "Start chatting →" [disabled] [ref=e42]

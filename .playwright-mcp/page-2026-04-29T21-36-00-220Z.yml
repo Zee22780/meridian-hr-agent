@@ -1,0 +1,48 @@
+- generic [ref=e3]:
+  - complementary [ref=e4]:
+    - generic [ref=e7]: Meridian
+    - navigation [ref=e8]:
+      - paragraph [ref=e9]: Main
+      - link "Dashboard" [ref=e10] [cursor=pointer]:
+        - /url: /dashboard
+        - img [ref=e11]
+        - text: Dashboard
+      - link "Escalations" [ref=e16] [cursor=pointer]:
+        - /url: /escalations
+        - img [ref=e17]
+        - text: Escalations
+      - link "Audit Log" [ref=e19] [cursor=pointer]:
+        - /url: /audit
+        - img [ref=e20]
+        - text: Audit Log
+      - link "New Hire Chat" [ref=e23] [cursor=pointer]:
+        - /url: /chat
+        - img [ref=e24]
+        - text: New Hire Chat
+    - generic [ref=e26]:
+      - paragraph [ref=e27]: Meridian HR Agent
+      - paragraph [ref=e28]: Phase 6 · MVP
+  - generic [ref=e29]:
+    - banner [ref=e30]:
+      - heading "Escalation Queue" [level=1] [ref=e31]
+    - main [ref=e32]:
+      - generic [ref=e33]:
+        - generic [ref=e34]:
+          - button "All" [ref=e35]
+          - button "Open" [ref=e36]
+          - button "Resolved" [ref=e37]
+          - button "Rejected" [ref=e38]
+        - generic [ref=e39]: Failed to fetch
+        - table [ref=e41]:
+          - rowgroup [ref=e42]:
+            - row "Employee Type Reason Priority Status Date" [ref=e43]:
+              - columnheader "Employee" [ref=e44]
+              - columnheader "Type" [ref=e45]
+              - columnheader "Reason" [ref=e46]
+              - columnheader "Priority" [ref=e47]
+              - columnheader "Status" [ref=e48]
+              - columnheader "Date" [ref=e49]
+              - columnheader [ref=e50]
+          - rowgroup [ref=e51]:
+            - row "No escalations found." [ref=e52]:
+              - cell "No escalations found." [ref=e53]

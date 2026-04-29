@@ -5,6 +5,7 @@ from datetime import datetime
 import anthropic
 from sqlalchemy import select
 
+from app.config import get_settings
 from app.data.service import DataService
 from app.db.supabase import async_session
 from app.db.tables import AgentAction, Employee
@@ -29,7 +30,7 @@ class OnboardingAgent:
     def __init__(self):
         self.registry = build_registry()
         self.tools = get_tool_schemas(self.registry)
-        self.client = anthropic.AsyncAnthropic()
+        self.client = anthropic.AsyncAnthropic(api_key=get_settings().anthropic_api_key)
 
     async def _log_action(
         self,

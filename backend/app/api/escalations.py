@@ -70,7 +70,7 @@ async def resolve_escalation(
         raise HTTPException(status_code=404, detail="Escalation not found.")
 
     esc.status = payload.status
-    esc.resolved_at = datetime.now(timezone.utc)
+    esc.resolved_at = datetime.now(timezone.utc).replace(tzinfo=None)
     if payload.resolution is not None:
         esc.resolution = payload.resolution
     if payload.assigned_to is not None:
