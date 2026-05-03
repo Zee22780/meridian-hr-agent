@@ -1,5 +1,7 @@
 # Meridian HR Agent
 
+> 🚧 This project is actively under development. Check back soon.
+
 An autonomous AI agent that handles new hire onboarding administrative tasks for Meridian's HR department. Built with Claude API, FastAPI, Supabase, and React.
 
 ## Overview
