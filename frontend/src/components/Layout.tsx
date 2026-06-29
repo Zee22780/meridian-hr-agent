@@ -5,7 +5,6 @@ const TITLES: Record<string, string> = {
   '/dashboard':   'Onboarding Dashboard',
   '/escalations': 'Escalation Queue',
   '/audit':       'Audit Log',
-  '/chat':        'New Hire Chat',
 }
 
 interface LayoutProps {

@@ -1,11 +1,10 @@
-import { AlertTriangle, ClipboardList, LayoutDashboard, MessageSquare } from 'lucide-react'
+import { AlertTriangle, ClipboardList, LayoutDashboard } from 'lucide-react'
 import { NavLink } from 'react-router-dom'
 
 const NAV = [
   { to: '/dashboard', label: 'Dashboard', icon: LayoutDashboard },
   { to: '/escalations', label: 'Escalations', icon: AlertTriangle },
   { to: '/audit', label: 'Audit Log', icon: ClipboardList },
-  { to: '/chat', label: 'New Hire Chat', icon: MessageSquare },
 ]
 
 export function Sidebar() {

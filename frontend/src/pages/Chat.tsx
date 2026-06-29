@@ -1,5 +1,6 @@
 import { Send } from 'lucide-react'
 import { useEffect, useRef, useState } from 'react'
+import { Markdown } from '../components/Markdown'
 import { api } from '../lib/api'
 
 const EMPLOYEES = [
@@ -180,7 +181,7 @@ export function Chat() {
                 </div>
               ) : (
                 <div className="max-w-2xl bg-white border border-slate-200 rounded-2xl rounded-bl-sm px-4 py-3 text-sm text-slate-700 space-y-2">
-                  <p className="whitespace-pre-wrap">{msg.text}</p>
+                  <Markdown>{msg.text}</Markdown>
                   <div className="flex items-center gap-2 flex-wrap">
                     {msg.confidence != null && (
                       <ConfidenceBadge score={msg.confidence} />

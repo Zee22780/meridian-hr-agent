@@ -1,4 +1,5 @@
 import { BrowserRouter, Navigate, Route, Routes } from 'react-router-dom'
+import { EmployeeLayout } from './components/EmployeeLayout'
 import { Layout } from './components/Layout'
 import { AuditLog } from './pages/AuditLog'
 import { Chat } from './pages/Chat'
@@ -23,8 +24,8 @@ export default function App() {
           element={<Layout><AuditLog /></Layout>}
         />
         <Route
-          path="/chat"
-          element={<Layout><Chat /></Layout>}
+          path="/employee"
+          element={<EmployeeLayout><Chat /></EmployeeLayout>}
         />
       </Routes>
     </BrowserRouter>
