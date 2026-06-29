@@ -14,11 +14,12 @@ Meridian is an **agent layer**, not a system of record — it sits on top of an 
 
 **HR Onboarding Dashboard** — progress tracking across the onboarding sequence, with I-9 verification escalated for human sign-off.
 
-<!-- Drag "HR Dashboard View.mov" into the GitHub README editor here; GitHub will replace this comment with the video player link. -->
+https://github.com/user-attachments/assets/843f58ac-b6c9-4525-94a5-1f77eabf281d
 
 **New Hire Chat** — the employee-facing portal for plain-language policy questions.
 
-<!-- Drag "Employee Chat View.mov" into the GitHub README editor here; GitHub will replace this comment with the video player link. -->
+https://github.com/user-attachments/assets/4a9d3863-c5bf-472d-86b8-7e0377cced75
+
 
 ## How It Works
 
