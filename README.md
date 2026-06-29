@@ -73,6 +73,39 @@ The UI is split into two surfaces with separate shells:
 - **HR Console** (`/dashboard`, `/escalations`, `/audit`) — onboarding progress cards, the escalation review queue (resolve/reject), and the full agent audit log.
 - **New Hire Chat** (`/employee`) — a policy Q&A chat with confidence badges and a "Connect with HR" link on escalated answers.
 
+## Running Locally
+
+**Prerequisites:** Python 3.11+, Node 18+, a Supabase project with `pgvector` enabled, and Anthropic + OpenAI API keys.
+
+```bash
+# 1. Configure — copy .env.example to backend/.env and set
+#    ANTHROPIC_API_KEY, OPENAI_API_KEY, DATABASE_URL + Supabase creds
+
+# 2. Create tables and ingest the policy handbook into pgvector
+psql "$DATABASE_URL" -f scripts/init_db.sql
+python scripts/ingest_policies.py
+
+# 3. Backend
+cd backend && source venv/bin/activate
+uvicorn app.main:app --reload --port 8000
+
+# 4. Frontend (in a second terminal)
+cd frontend && npm install && npm run dev
+```
+
+Open **http://localhost:5173**. To kick off an onboarding (simulating the HRIS webhook):
+
+```bash
+curl -X POST http://localhost:8000/onboarding/trigger \
+  -H "Content-Type: application/json" \
+  -d '{"employee_id":"EMP_DEMO_01","first_name":"Taylor","last_name":"Brooks",
+       "email":"taylor.brooks@meridian.com","department":"Engineering",
+       "title":"Product Designer","start_date":"2026-05-12",
+       "manager_id":"EMP002","manager_email":"marcus.chen@meridian.com"}'
+```
+
+The agent runs in the background (~30–60s) and the new hire appears on the dashboard.
+
 ## API
 
 | Method | Endpoint | Purpose |

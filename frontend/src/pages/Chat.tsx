@@ -31,15 +31,16 @@ interface Message {
   escalated?: boolean
 }
 
-function ConfidenceBadge({ score }: { score: number }) {
-  const pct = Math.round(score * 100)
-  const color = pct >= 70 ? 'bg-green-100 text-green-700' : 'bg-amber-100 text-amber-700'
-  return (
-    <span className={`inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium ${color}`}>
-      {pct}% confidence
-    </span>
-  )
-}
+// Confidence percentage hidden for now — to be refined and re-enabled later.
+// function ConfidenceBadge({ score }: { score: number }) {
+//   const pct = Math.round(score * 100)
+//   const color = pct >= 70 ? 'bg-green-100 text-green-700' : 'bg-amber-100 text-amber-700'
+//   return (
+//     <span className={`inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium ${color}`}>
+//       {pct}% confidence
+//     </span>
+//   )
+// }
 
 function IdentityGate({ onSelect }: { onSelect: (id: string, name: string) => void }) {
   const [selected, setSelected] = useState('')
@@ -183,9 +184,10 @@ export function Chat() {
                 <div className="max-w-2xl bg-white border border-slate-200 rounded-2xl rounded-bl-sm px-4 py-3 text-sm text-slate-700 space-y-2">
                   <Markdown>{msg.text}</Markdown>
                   <div className="flex items-center gap-2 flex-wrap">
-                    {msg.confidence != null && (
+                    {/* Confidence percentage hidden for now — to be refined and re-enabled later */}
+                    {/* {msg.confidence != null && (
                       <ConfidenceBadge score={msg.confidence} />
-                    )}
+                    )} */}
                     {msg.escalated && (
                       <a
                         href="mailto:hr@meridian.com"
