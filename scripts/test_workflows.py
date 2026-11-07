@@ -13,16 +13,14 @@ Usage:
 """
 
 import asyncio
-import sys
-from pathlib import Path
 
-from dotenv import load_dotenv
+# Loads backend/.env, puts backend/ on the path, and pins the database to
+# the Neon test branch. Must precede every app.* import.
+import _bootstrap
 
-load_dotenv(Path(__file__).parent.parent / "backend" / ".env")
-sys.path.insert(0, str(Path(__file__).parent.parent / "backend"))
+_bootstrap.use_test_branch()
 
 from app.agent.orchestrator import OnboardingAgent
-
 
 EMPLOYEE_ID = "EMP001"
 
@@ -39,7 +37,6 @@ ONBOARDING_EMPLOYEE = {
     "employment_type": "full_time",
     "location": "Remote",
 }
-
 
 def _print_result(result: dict) -> None:
     tool_calls = result["tool_calls"]
@@ -67,7 +64,6 @@ def _print_result(result: dict) -> None:
     print()
     print(f"  response: {result['response'][:300]}{'...' if len(result['response']) > 300 else ''}")
 
-
 async def test_high_confidence(agent: OnboardingAgent) -> None:
     print("\n=== Test 1: High Confidence Path ===")
     print("  question: How many PTO days do I get per year?\n")
@@ -89,7 +85,6 @@ async def test_high_confidence(agent: OnboardingAgent) -> None:
     assert retrieve_calls, "Expected at least one retrieve_policy call"
 
     print("  PASSED")
-
 
 async def test_low_confidence(agent: OnboardingAgent) -> None:
     print("\n=== Test 2: Low Confidence Path (escalation hard-rule) ===")
@@ -116,7 +111,6 @@ async def test_low_confidence(agent: OnboardingAgent) -> None:
 
     print("  PASSED")
 
-
 async def test_i9_hard_rule(agent: OnboardingAgent) -> None:
     print("\n=== Test 3: I9 Hard Rule ===")
     question = "How do I complete my I-9 form?"
@@ -140,7 +134,6 @@ async def test_i9_hard_rule(agent: OnboardingAgent) -> None:
         "I9 escalation must have priority='urgent'"
 
     print("  PASSED")
-
 
 async def test_onboarding(agent: OnboardingAgent) -> None:
     print("\n=== Test 4: Autonomous Onboarding Workflow ===")
@@ -180,7 +173,6 @@ async def test_onboarding(agent: OnboardingAgent) -> None:
 
     print("\n  PASSED")
 
-
 async def main() -> None:
     agent = OnboardingAgent()
 
@@ -190,7 +182,6 @@ async def main() -> None:
     await test_onboarding(agent)
 
     print("\n\nAll tests passed.")
-
 
 if __name__ == "__main__":
     asyncio.run(main())

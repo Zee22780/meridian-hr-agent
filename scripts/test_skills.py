@@ -7,23 +7,19 @@ Usage:
 """
 
 import asyncio
-import os
-import sys
-from pathlib import Path
 
-from dotenv import load_dotenv
+# Loads backend/.env, puts backend/ on the path, and pins the database to
+# the Neon test branch. Must precede every app.* import.
+import _bootstrap
 
-load_dotenv(Path(__file__).parent.parent / "backend" / ".env")
-sys.path.insert(0, str(Path(__file__).parent.parent / "backend"))
+_bootstrap.use_test_branch()
 
 import json
-
 
 def _section(title: str) -> None:
     print(f"\n{'=' * 60}")
     print(f"  {title}")
     print("=" * 60)
-
 
 async def test_send_email() -> None:
     _section("send_email")
@@ -39,7 +35,6 @@ async def test_send_email() -> None:
     assert result["status"] == "sent"
     print("PASS")
 
-
 async def test_schedule_meeting() -> None:
     _section("schedule_meeting")
     from app.skills.schedule_meeting import ScheduleMeetingSkill
@@ -53,7 +48,6 @@ async def test_schedule_meeting() -> None:
     print(json.dumps(result, indent=2))
     assert result["status"] == "scheduled"
     print("PASS")
-
 
 async def test_lookup_employee() -> None:
     _section("lookup_employee")
@@ -69,7 +63,6 @@ async def test_lookup_employee() -> None:
     assert result_missing["status"] == "not_found"
     print("PASS")
 
-
 async def test_retrieve_policy() -> None:
     _section("retrieve_policy")
     from app.skills.retrieve_policy import RetrievePolicySkill
@@ -81,7 +74,6 @@ async def test_retrieve_policy() -> None:
     assert "documents" in result
     assert "confidence_score" in result
     print("PASS")
-
 
 async def test_registry() -> None:
     _section("registry / tool schemas")
@@ -95,7 +87,6 @@ async def test_registry() -> None:
     assert len(schemas) == 6
     print("PASS")
 
-
 async def main() -> None:
     print("Meridian HR Agent — Phase 3 Skills Smoke Test")
 
@@ -108,7 +99,6 @@ async def main() -> None:
     print("\n" + "=" * 60)
     print("  All smoke tests passed.")
     print("=" * 60)
-
 
 if __name__ == "__main__":
     asyncio.run(main())

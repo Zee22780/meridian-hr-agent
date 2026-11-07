@@ -7,16 +7,14 @@ Usage:
 """
 
 import asyncio
-import sys
-from pathlib import Path
 
-from dotenv import load_dotenv
+# Loads backend/.env, puts backend/ on the path, and pins the database to
+# the Neon test branch. Must precede every app.* import.
+import _bootstrap
 
-load_dotenv(Path(__file__).parent.parent / "backend" / ".env")
-sys.path.insert(0, str(Path(__file__).parent.parent / "backend"))
+_bootstrap.use_test_branch()
 
 from app.agent.orchestrator import OnboardingAgent
-
 
 EMPLOYEE = {
     "employee_id": "EMP001",
@@ -31,7 +29,6 @@ EMPLOYEE = {
     "employment_type": "full_time",
     "location": "Remote",
 }
-
 
 async def test_onboarding_workflow():
     print("\n=== Test: Autonomous Onboarding Workflow ===")
@@ -91,11 +88,9 @@ async def test_onboarding_workflow():
 
     print("\nPASSED")
 
-
 async def main():
     await test_onboarding_workflow()
     print("\nAll tests passed.")
-
 
 if __name__ == "__main__":
     asyncio.run(main())

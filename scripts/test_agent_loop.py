@@ -7,16 +7,14 @@ Usage:
 """
 
 import asyncio
-import sys
-from pathlib import Path
 
-from dotenv import load_dotenv
+# Loads backend/.env, puts backend/ on the path, and pins the database to
+# the Neon test branch. Must precede every app.* import.
+import _bootstrap
 
-load_dotenv(Path(__file__).parent.parent / "backend" / ".env")
-sys.path.insert(0, str(Path(__file__).parent.parent / "backend"))
+_bootstrap.use_test_branch()
 
 from app.agent.orchestrator import OnboardingAgent
-
 
 async def test_policy_qa_high_confidence():
     print("\n=== Test: Policy Q&A — high confidence ===")
@@ -41,7 +39,6 @@ async def test_policy_qa_high_confidence():
     assert result["response"], "Expected non-empty response"
     print("PASSED")
 
-
 async def test_policy_qa_low_confidence():
     print("\n=== Test: Policy Q&A — low confidence / escalation ===")
     agent = OnboardingAgent()
@@ -64,7 +61,6 @@ async def test_policy_qa_low_confidence():
         "Low-confidence question should escalate via flag_for_human_review"
     assert result["response"], "Expected non-empty response"
     print("PASSED")
-
 
 async def test_onboarding_stub():
     print("\n=== Test: Onboarding stub (loop mechanics) ===")
@@ -93,13 +89,11 @@ async def test_onboarding_stub():
         f"Unexpected stop_reason: {result['stop_reason']}"
     print("PASSED")
 
-
 async def main():
     await test_policy_qa_high_confidence()
     await test_policy_qa_low_confidence()
     await test_onboarding_stub()
     print("\nAll tests passed.")
-
 
 if __name__ == "__main__":
     asyncio.run(main())
