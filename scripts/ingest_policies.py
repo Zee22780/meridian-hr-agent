@@ -19,13 +19,10 @@ import re
 import sys
 from pathlib import Path
 
-from dotenv import load_dotenv
 
-# Load env from backend/.env
-load_dotenv(Path(__file__).parent.parent / "backend" / ".env")
-
-# Add backend to path so app imports work
-sys.path.insert(0, str(Path(__file__).parent.parent / "backend"))
+# Loads backend/.env and puts backend/ on the path. Must precede app.* imports.
+# No branch override: this operates on the main database by design.
+import _bootstrap  # noqa: F401
 
 from openai import OpenAI
 from sqlalchemy import delete

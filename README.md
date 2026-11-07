@@ -108,6 +108,19 @@ uvicorn app.main:app --reload --port 8000
 cd frontend && npm install && npm run dev
 ```
 
+The scripts in `scripts/` split by whether they write:
+
+| Script | Database |
+|---|---|
+| `ingest_policies.py`, `verify_rag.py` | `DATABASE_URL` — main, by design |
+| `test_*.py` | `TEST_DATABASE_URL` — a Neon branch, required |
+
+The test scripts have no fixtures and no rollback, so they're pinned to a
+branch rather than the main database. Create one in the Neon console
+(Branches → New branch, parent `main`) and set `TEST_DATABASE_URL` to its
+pooled string. A branch is a copy-on-write clone, so the policy chunks come
+along with it. To run against main deliberately: `ALLOW_MAIN_DB=1 python <script>`.
+
 Open **http://localhost:5173**. To kick off an onboarding (simulating the HRIS webhook):
 
 ```bash

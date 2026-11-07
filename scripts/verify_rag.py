@@ -11,14 +11,10 @@ Usage:
 import asyncio
 import os
 import sys
-from pathlib import Path
 
-from dotenv import load_dotenv
-
-load_dotenv(Path(__file__).parent.parent / "backend" / ".env")
-
-# Add backend to path so app imports work
-sys.path.insert(0, str(Path(__file__).parent.parent / "backend"))
+# Loads backend/.env and puts backend/ on the path. Must precede app.* imports.
+# No branch override: this operates on the main database by design.
+import _bootstrap  # noqa: F401
 
 from openai import OpenAI
 from sqlalchemy import func, select, text
@@ -33,7 +29,6 @@ TEST_QUERIES = [
     "How much PTO do I get in my first year?",
     "Can I work from home?",
 ]
-
 
 async def run_all(queries: list[tuple[str, list[float]]]) -> None:
     async with async_session() as session:
@@ -63,7 +58,6 @@ async def run_all(queries: list[tuple[str, list[float]]]) -> None:
                 print(f"  {i}. [{row.category}] {row.title}  (similarity: {row.similarity:.4f})")
             print()
 
-
 def main() -> None:
     openai_key = os.environ.get("OPENAI_API_KEY")
     if not openai_key:
@@ -84,7 +78,6 @@ def main() -> None:
 
     print("=" * 60)
     print("Verification complete. Results with similarity > 0.5 confirm the pipeline is working.")
-
 
 if __name__ == "__main__":
     main()
