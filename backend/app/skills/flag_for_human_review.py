@@ -1,6 +1,6 @@
 from datetime import datetime, timezone
 
-from app.db.supabase import async_session
+from app.db.session import async_session
 from app.db.tables import Escalation
 from app.skills.base import ClaudeSkill
 

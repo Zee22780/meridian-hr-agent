@@ -3,7 +3,7 @@ from datetime import datetime, timezone
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from app.db.supabase import async_session
+from app.db.session import async_session
 from app.db.tables import OnboardingProgress
 from app.skills.base import ClaudeSkill
 

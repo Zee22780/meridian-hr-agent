@@ -3,13 +3,17 @@ Policy ingestion script.
 
 Reads all markdown docs from backend/app/rag/documents/, chunks them,
 embeds each chunk via the OpenAI embeddings API (text-embedding-3-small, 1536d),
-and inserts into the Supabase policy_documents table.
+and inserts into the policy_documents table.
+
+Re-runnable: clears existing chunks before inserting, so the table always
+reflects the current contents of the documents directory.
 
 Usage:
     cd /path/to/meridian-hr-agent
     python scripts/ingest_policies.py
 """
 
+import asyncio
 import os
 import re
 import sys
@@ -20,8 +24,14 @@ from dotenv import load_dotenv
 # Load env from backend/.env
 load_dotenv(Path(__file__).parent.parent / "backend" / ".env")
 
+# Add backend to path so app imports work
+sys.path.insert(0, str(Path(__file__).parent.parent / "backend"))
+
 from openai import OpenAI
-from supabase import create_client
+from sqlalchemy import delete
+
+from app.db.session import async_session
+from app.db.tables import PolicyDocument
 
 # ── Config ────────────────────────────────────────────────────────────────────
 
@@ -89,23 +99,15 @@ def chunk_document(text: str) -> list[str]:
 
 # ── Main ──────────────────────────────────────────────────────────────────────
 
-def ingest() -> None:
+async def ingest() -> None:
     openai_key = os.environ.get("OPENAI_API_KEY")
-    supabase_url = os.environ.get("SUPABASE_URL")
-    supabase_key = os.environ.get("SUPABASE_SERVICE_ROLE_KEY")
+    database_url = os.environ.get("DATABASE_URL")
 
-    if not all([openai_key, supabase_url, supabase_key]):
-        print("ERROR: Missing required env vars (OPENAI_API_KEY, SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY)")
+    if not all([openai_key, database_url]):
+        print("ERROR: Missing required env vars (OPENAI_API_KEY, DATABASE_URL)")
         sys.exit(1)
 
     openai_client = OpenAI(api_key=openai_key)
-    supabase = create_client(supabase_url, supabase_key)
-
-    # Clear existing chunks so re-runs are idempotent
-    supabase.table("policy_documents").delete().neq(
-        "id", "00000000-0000-0000-0000-000000000000"
-    ).execute()
-    print("Cleared existing policy_documents rows.\n")
 
     doc_files = sorted(DOCS_DIR.glob("*.md"))
     if not doc_files:
@@ -114,38 +116,51 @@ def ingest() -> None:
 
     total_chunks = 0
 
-    for doc_path in doc_files:
-        text = doc_path.read_text(encoding="utf-8")
-        category = doc_path.stem
-        source_file = doc_path.name
-        title = category.replace("_", " ").title()
+    async with async_session() as session:
+        # Clear existing chunks so re-runs are idempotent
+        await session.execute(delete(PolicyDocument))
+        print("Cleared existing policy_documents rows.\n")
 
-        chunks = chunk_document(text)
-        print(f"{source_file}  →  {len(chunks)} chunks")
+        for doc_path in doc_files:
+            text = doc_path.read_text(encoding="utf-8")
+            category = doc_path.stem
+            source_file = doc_path.name
+            title = category.replace("_", " ").title()
 
-        for i, chunk_text in enumerate(chunks, start=1):
-            response = openai_client.embeddings.create(
-                model=EMBEDDING_MODEL,
-                input=chunk_text,
-            )
-            embedding: list[float] = response.data[0].embedding
+            chunks = chunk_document(text)
+            print(f"{source_file}  →  {len(chunks)} chunks")
 
-            supabase.table("policy_documents").insert({
-                "title": f"{title} — chunk {i}",
-                "content": chunk_text,
-                "category": category,
-                "source_file": source_file,
-                "embedding": embedding,
-                "version": "1.0",
-            }).execute()
+            for i, chunk_text in enumerate(chunks, start=1):
+                response = openai_client.embeddings.create(
+                    model=EMBEDDING_MODEL,
+                    input=chunk_text,
+                )
+                embedding: list[float] = response.data[0].embedding
 
-            total_chunks += 1
-            print(f"  [{i}/{len(chunks)}] ~{estimate_tokens(chunk_text)} tokens, {len(embedding)}d embedding")
+                # The pgvector SQLAlchemy type adapts a plain list[float], so
+                # no string-and-cast dance is needed on the write path.
+                session.add(
+                    PolicyDocument(
+                        title=f"{title} — chunk {i}",
+                        content=chunk_text,
+                        category=category,
+                        source_file=source_file,
+                        embedding=embedding,
+                        version="1.0",
+                    )
+                )
 
-        print()
+                total_chunks += 1
+                print(f"  [{i}/{len(chunks)}] ~{estimate_tokens(chunk_text)} tokens, {len(embedding)}d embedding")
+
+            print()
+
+        # One commit for the whole run — the delete and every insert land
+        # together, so a mid-run failure leaves the old chunks in place.
+        await session.commit()
 
     print(f"Done. {total_chunks} chunks ingested from {len(doc_files)} documents.")
 
 
 if __name__ == "__main__":
-    ingest()
+    asyncio.run(ingest())

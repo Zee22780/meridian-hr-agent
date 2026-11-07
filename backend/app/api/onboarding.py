@@ -10,7 +10,7 @@ from app.api.schemas import (
     TriggerOnboardingRequest,
     TriggerOnboardingResponse,
 )
-from app.db.supabase import get_db
+from app.db.session import get_db
 from app.db.tables import Employee, OnboardingProgress
 
 router = APIRouter(prefix="/onboarding", tags=["onboarding"])

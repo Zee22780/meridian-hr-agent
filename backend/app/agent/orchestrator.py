@@ -7,7 +7,7 @@ from sqlalchemy import select
 
 from app.config import get_settings
 from app.data.service import DataService
-from app.db.supabase import async_session
+from app.db.session import async_session
 from app.db.tables import AgentAction, Employee
 from app.skills.registry import build_registry, get_tool_schemas
 

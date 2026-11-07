@@ -3,7 +3,7 @@ from sqlalchemy import func, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.api.schemas import AuditLogEntry, AuditLogResponse
-from app.db.supabase import get_db
+from app.db.session import get_db
 from app.db.tables import AgentAction
 
 router = APIRouter(prefix="/audit-log", tags=["audit"])

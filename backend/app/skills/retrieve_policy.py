@@ -1,6 +1,6 @@
 from sqlalchemy import text
 
-from app.db.supabase import async_session
+from app.db.session import async_session
 from app.skills.base import ClaudeSkill
 
 EMBEDDING_MODEL = "text-embedding-3-small"
@@ -58,17 +58,22 @@ class RetrievePolicySkill(ClaudeSkill):
         query_embedding = response.data[0].embedding
 
         async with async_session() as session:
-            # Order by the alias — ordering on the raw <=> expression can short-circuit
-            # IVFFlat indexes on small datasets (verified in Phase 2)
+            # Order on the raw <=> distance operator, not on the `similarity`
+            # alias: only the operator form is index-eligible, so ordering by
+            # the derived 1 - (...) expression forces a sequential scan and the
+            # HNSW index never gets used. Ascending distance == descending
+            # similarity, so the row order is identical either way.
             sql = text(
                 "SELECT title, category, content, source_file, "
                 "1 - (embedding <=> CAST(:vec AS vector)) AS similarity "
                 "FROM policy_documents "
                 "WHERE embedding IS NOT NULL "
-                "ORDER BY similarity DESC "
-                f"LIMIT {TOP_K}"
+                "ORDER BY embedding <=> CAST(:vec AS vector) "
+                "LIMIT :top_k"
             )
-            result = await session.execute(sql, {"vec": str(query_embedding)})
+            result = await session.execute(
+                sql, {"vec": str(query_embedding), "top_k": TOP_K}
+            )
             rows = result.all()
 
         if not rows:
