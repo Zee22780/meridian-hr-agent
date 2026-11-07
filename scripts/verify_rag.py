@@ -23,7 +23,7 @@ sys.path.insert(0, str(Path(__file__).parent.parent / "backend"))
 from openai import OpenAI
 from sqlalchemy import func, select, text
 
-from app.db.supabase import async_session
+from app.db.session import async_session
 from app.db.tables import PolicyDocument
 
 EMBEDDING_MODEL = "text-embedding-3-small"
@@ -42,14 +42,19 @@ async def run_all(queries: list[tuple[str, list[float]]]) -> None:
         print(f"Total chunks in DB: {total}\n")
 
         for query, embedding in queries:
+            # Mirrors the query shape in skills/retrieve_policy.py exactly —
+            # ordering on the raw <=> operator so this measures what production
+            # does, index and all.
             raw = text(
                 "SELECT title, category, 1 - (embedding <=> CAST(:vec AS vector)) AS similarity "
                 "FROM policy_documents "
                 "WHERE embedding IS NOT NULL "
-                "ORDER BY similarity DESC "
-                f"LIMIT {TOP_K}"
+                "ORDER BY embedding <=> CAST(:vec AS vector) "
+                "LIMIT :top_k"
             )
-            results = await session.execute(raw, {"vec": str(embedding)})
+            results = await session.execute(
+                raw, {"vec": str(embedding), "top_k": TOP_K}
+            )
             rows = results.all()
 
             print(f'Query: "{query}"')

@@ -1,5 +1,12 @@
 -- Meridian HR Agent — Initial Schema
--- Run this once in the Supabase SQL Editor before starting the app.
+--
+-- Run this once before starting the app, against the DIRECT (non-pooled) Neon
+-- endpoint — PgBouncer's transaction mode disables the session-level features
+-- that extension creation and DDL rely on:
+--
+--     psql "$NEON_DIRECT_URL" -f scripts/init_db.sql
+--
+-- gen_random_uuid() below needs no extension: it is core Postgres since 13.
 
 -- Enable pgvector extension
 create extension if not exists vector;
@@ -58,10 +65,15 @@ create table if not exists policy_documents (
     created_at  timestamptz default now()
 );
 
--- Index for fast vector similarity search
+-- Index for fast vector similarity search.
+--
+-- HNSW rather than IVFFlat: IVFFlat partitions rows into `lists` clusters and
+-- probes one of them by default, which returns almost nothing on a corpus this
+-- small (~15 chunks). HNSW needs no list tuning and degrades gracefully at any
+-- row count. Queries must order on the raw `<=>` distance operator to use it —
+-- see retrieve_policy.py.
 create index if not exists policy_documents_embedding_idx
-    on policy_documents using ivfflat (embedding vector_cosine_ops)
-    with (lists = 100);
+    on policy_documents using hnsw (embedding vector_cosine_ops);
 
 -- 5. Agent Actions (audit log)
 create table if not exists agent_actions (

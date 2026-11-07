@@ -10,7 +10,7 @@ from app.api.schemas import (
     ResolveEscalationRequest,
     ResolveEscalationResponse,
 )
-from app.db.supabase import get_db
+from app.db.session import get_db
 from app.db.tables import Employee, Escalation
 
 router = APIRouter(prefix="/escalations", tags=["escalations"])

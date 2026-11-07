@@ -1,6 +1,6 @@
 # Meridian HR Agent
 
-An autonomous AI agent that handles new hire onboarding and policy Q&A for HR teams. Built on the Claude API with native tool use, a FastAPI backend, Supabase (PostgreSQL + pgvector), and a React dashboard.
+An autonomous AI agent that handles new hire onboarding and policy Q&A for HR teams. Built on the Claude API with native tool use, a FastAPI backend, Neon (serverless PostgreSQL + pgvector), and a React dashboard.
 
 ## Overview
 
@@ -54,7 +54,7 @@ HRIS webhook
         │                    └────────────┬─────────────┘
         ▼                                 ▼
 ┌─────────────────────────────────────────────────────────┐
-│  Supabase (PostgreSQL + pgvector)                        │
+│  Neon — serverless PostgreSQL + pgvector                 │
 │  onboarding_progress · escalations · policy_documents    │
 │  · agent_actions (audit log)                             │
 └─────────────────────────────────────────────────────────┘
@@ -73,7 +73,7 @@ HRIS webhook
 | Agent | Claude API (`claude-sonnet-4-6`) with native `tool_use` |
 | Backend | Python + FastAPI (async) |
 | Frontend | Vite + React + TypeScript + Tailwind |
-| Database | Supabase PostgreSQL + pgvector |
+| Database | Neon (serverless PostgreSQL) + pgvector |
 | Embeddings | OpenAI `text-embedding-3-small` (1536d) |
 | ORM | SQLAlchemy (async) |
 
@@ -86,14 +86,18 @@ The UI is split into two surfaces with separate shells:
 
 ## Running Locally
 
-**Prerequisites:** Python 3.11+, Node 18+, a Supabase project with `pgvector` enabled, and Anthropic + OpenAI API keys.
+**Prerequisites:** Python 3.11+, Node 18+, a [Neon](https://neon.com) project, and Anthropic + OpenAI API keys.
 
 ```bash
 # 1. Configure — copy .env.example to backend/.env and set
-#    ANTHROPIC_API_KEY, OPENAI_API_KEY, DATABASE_URL + Supabase creds
+#    ANTHROPIC_API_KEY, OPENAI_API_KEY, DATABASE_URL
+#    Use Neon's POOLED connection string (hostname contains "-pooler").
 
-# 2. Create tables and ingest the policy handbook into pgvector
-psql "$DATABASE_URL" -f scripts/init_db.sql
+# 2. Create tables and ingest the policy handbook into pgvector.
+#    Run the DDL against Neon's DIRECT (non-pooled) endpoint — PgBouncer's
+#    transaction mode disables the session features CREATE EXTENSION needs.
+psql "$NEON_DIRECT_URL" -c "CREATE EXTENSION IF NOT EXISTS vector;"
+psql "$NEON_DIRECT_URL" -f scripts/init_db.sql
 python scripts/ingest_policies.py
 
 # 3. Backend

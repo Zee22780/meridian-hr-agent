@@ -5,7 +5,7 @@ from sqlalchemy import text
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.api import audit, chat, escalations, onboarding
-from app.db.supabase import get_db
+from app.db.session import get_db
 
 app = FastAPI(title="Meridian HR Agent", version="0.1.0")
 
